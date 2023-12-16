@@ -1,0 +1,23 @@
+{
+	"manifest_version": 3,
+	"name": "Voice 2 Text",
+	"version": "1.0",
+	"permissions": ["activeTab", "tabs", "storage"],
+	"action": {
+		"default_popup": "popup.html"
+	},
+	"background": {
+		"service_worker": "background.js"
+	},
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"js": ["contentScript.js"]
+		}
+	],
+	"icons": {
+		"16": "resources/icon.png",
+		"48": "resources/icon.png",
+		"128": "resources/icon.png"
+	}
+}
