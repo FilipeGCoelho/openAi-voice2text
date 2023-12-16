@@ -112,7 +112,7 @@ function sendToTranscriptionAPI(blob) {
 
 	// Replace with your actual API endpoint and API key
 	const apiEndpoint = "https://api.openai.com/v1/audio/transcriptions";
-	const apiKey = "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";
+	const apiKey = "REPLACE-WITH-YOUR-OPENAI-KEY";
 
 	fetch(apiEndpoint, {
 		method: "POST",
