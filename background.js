@@ -64,10 +64,12 @@ function sendCommandToContentScript(command) {
 				console.error(`${PAGE_NAME}: No active tab found.`);
 				return;
 			}
-			contentPort.postMessage({ command });
-			console.log(
-				`${PAGE_NAME}: command '${command} send to contentScript`
-			);
+			if (contentPort) {
+				contentPort.postMessage({ command });
+				console.log(
+					`${PAGE_NAME}: command '${command} send to contentScript`
+				);
+			} else console.error("ContentScript.js connection fell.");
 		});
 	});
 }
