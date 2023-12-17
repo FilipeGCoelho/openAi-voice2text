@@ -9,6 +9,7 @@ let port = null;
 document.addEventListener("DOMContentLoaded", () => {
   port = chrome.runtime.connect({ name: CONNECTION_WITH_BACKGROUND_NAME });
 
+  loadLastTranscription();
   setupRecordStopButton();
   setupClipboardButton();
   setupPasswordSaveButton();
@@ -28,8 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
         `${PAGE_NAME}: request ${COMMAND_STOP_RECORDING} accepted: ${message.content}`
       );
     } else if (message.command === COMMAND_TRANSCRIPTION_RESULT) {
-      document.getElementById(COMMAND_TRANSCRIPTION_RESULT).textContent =
-        message.transcription || "No transcription available.";
+      if (message.transcription) {
+        document.getElementById(COMMAND_TRANSCRIPTION_RESULT).textContent =
+          message.transcription;
+        saveLastTranscription(message.transcription);
+      }
     }
   });
 });
@@ -83,4 +87,19 @@ function setupPasswordSaveButton() {
       }
     });
   });
+}
+
+function loadLastTranscription() {
+  // Load and display the stored transcription when the popup opens
+  chrome.storage.local.get("transcription", function (result) {
+    if (result.transcription) {
+      document.getElementById(COMMAND_TRANSCRIPTION_RESULT).textContent =
+        result.transcription;
+    }
+  });
+}
+
+function saveLastTranscription(transcription) {
+  // Save transcription to be display when the popup opens
+  chrome.storage.local.set({ transcription });
 }
