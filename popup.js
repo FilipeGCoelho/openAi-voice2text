@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadLastTranscription();
   setupRecordStopButton();
   setupClipboardButton();
-  setupPasswordSaveButton();
+  setupAPIKeySaveButton();
+  setupPostProcessingButton();
 
   // Listen for messages from the background script
   port.onMessage.addListener((message) => {
@@ -73,7 +74,7 @@ function setupClipboardButton() {
   });
 }
 
-function setupPasswordSaveButton() {
+function setupAPIKeySaveButton() {
   document.getElementById("saveButton").addEventListener("click", function () {
     const apiKeyInput = document.getElementById("apiKeyInput");
     const apiKey = apiKeyInput.value;
@@ -87,6 +88,29 @@ function setupPasswordSaveButton() {
       }
     });
   });
+}
+
+function setupPostProcessingButton() {
+  const postProcessingCheckbox = document.getElementById("postProcessing");
+  const onClickHandler = (event) => {
+    chrome.storage.local.set(
+      { postProcessing: event.target.checked },
+      function () {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Error saving postProcessing selection: ",
+            chrome.runtime.lastError
+          );
+        } else {
+          apiKeyInput.value = "";
+          console.log("postProcessing selection saved successfully");
+        }
+      }
+    );
+  };
+
+  postProcessingCheckbox.addEventListener("click", onClickHandler);
+  onClickHandler({ target: { checked: false } });
 }
 
 function loadLastTranscription() {

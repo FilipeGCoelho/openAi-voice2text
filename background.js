@@ -86,7 +86,15 @@ function sendTranscriptionToPopup(transcription) {
 
 function handleAudioData(dataURL) {
   const blob = dataURLToBlob(dataURL);
-  sendToTranscriptionAPI(blob);
+  const callback = (data) => sendTranscriptionToPopup(data);
+
+  getPostProcessingSelection((postProcessing) => {
+    if (postProcessing) {
+      sendToTranscriptionAPI(blob, (data) => postProcessAPI(data, callback));
+    } else {
+      sendToTranscriptionAPI(blob, callback);
+    }
+  });
 }
 
 function dataURLToBlob(dataURL) {
@@ -108,12 +116,22 @@ function useApiKey(callback) {
       callback(result.apiKey);
     } else {
       console.error("No API Key found");
-      // Handle the absence of the API key appropriately
     }
   });
 }
 
-function sendToTranscriptionAPI(blob) {
+function getPostProcessingSelection(callback) {
+  chrome.storage.local.get("postProcessing", function (result) {
+    if (result.postProcessing) {
+      callback(result.postProcessing);
+    } else {
+      console.error("No postProcessing found");
+      callback(false);
+    }
+  });
+}
+
+function sendToTranscriptionAPI(blob, callback) {
   useApiKey((apiKey) => {
     const formData = new FormData();
     formData.append("file", blob, "audio.webm");
@@ -122,10 +140,7 @@ function sendToTranscriptionAPI(blob) {
     formData.append("response_format", "json");
     formData.append("temperature", 0.2); // Adjust as needed
 
-    // Replace with your actual API endpoint and API key
-    const apiEndpoint = "https://api.openai.com/v1/audio/transcriptions";
-
-    fetch(apiEndpoint, {
+    fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -134,17 +149,71 @@ function sendToTranscriptionAPI(blob) {
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`API response error: ${response.statusText}`);
+          throw new Error(
+            `Transcription API response error: ${response.statusText}`
+          );
         }
         return response.json();
       })
       .then((data) => {
         console.log("Transcription result:", data.text);
-        // Process the transcription result
-        sendTranscriptionToPopup(data.text);
+        callback(data.text);
       })
       .catch((error) => {
         console.error("Error sending audio to transcription API:", error);
+      });
+  });
+}
+
+function postProcessAPI(transcript, callback) {
+  useApiKey((apiKey) => {
+    const requestBody = {
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert in journaling, writing emails, and any kind of text creation. Your job is to receive transcriptions from an audio file and convert it into a clear, well-formatted text, that follows all best practices, like bullet points, numbered lists, paragraphs, and punctuation.\nPlease make sure that the output is genuine to the input, simply make it clear while having the same vocabulary, and avoid adding expressions or phrases that were not said.",
+        },
+        {
+          role: "user",
+          content: transcript,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 1028,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    };
+
+    fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Completion API response error: ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const postProcessedResponse = data?.choices[0]?.message?.content;
+
+        if (!postProcessedResponse)
+          throw new Error("Post-Processing API didn't provide any suggestion.");
+
+        console.log("Post-processing result: ", postProcessedResponse);
+        callback(postProcessedResponse);
+      })
+      .catch((error) => {
+        console.error("Error during post-processing: ", error);
       });
   });
 }

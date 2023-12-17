@@ -43,5 +43,11 @@ html {
 }
 
 button#copy-to-clipboard {
+  font-size: 15px;
   display: flex;
+  padding: 10px 15px;
+}
+
+div#postProcessingContainer {
+  padding-bottom: 15px;
 }
