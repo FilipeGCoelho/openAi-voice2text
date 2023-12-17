@@ -1,17 +1,21 @@
-<!DOCTYPE html>
 <html>
-	<head>
-		<title>Record Audio</title>
-		<link rel="stylesheet" type="text/css" href="popup.css" />
-	</head>
-	<body>
-		<button id="record-toggle">Start Recording</button>
-		<div id="transcription-result"></div>
-		<button id="copy-to-clipboard" title="Copy to Clipboard">Copy</button>
-		<div id="disclaimer">
-			This extension is for personal use. It records audio and sends it to
-			a server for transcription. No data is stored after processing.
-		</div>
-	</body>
-	<script src="popup.js"></script>
+  <head>
+    <title>Record Audio</title>
+    <link rel="stylesheet" type="text/css" href="popup.css" />
+  </head>
+  <body>
+    <div id="apiKeyContainer">
+      <input type="text" id="apiKeyInput" placeholder="Enter API Key" />
+      <button id="saveButton">Save</button>
+    </div>
+    <button id="record-toggle">Start Recording</button>
+    <div id="transcription-result">Your transcription will appear here...</div>
+    <button id="copy-to-clipboard" title="Copy to Clipboard">Copy</button>
+    <div id="disclaimer">
+      This extension is for personal use. It records audio and sends it to a
+      server for transcription. No data is stored after processing.
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
 </html>
