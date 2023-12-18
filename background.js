@@ -7,7 +7,7 @@ const COMMAND_TRANSCRIPTION_RESULT = "transcription-result";
 const COMMAND_AUDIO_DATA = "audio-data";
 
 let popupPort = null;
-let contentPort = null;
+let contentPorts = {}; // Use an object to manage multiple contentPorts
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === POPUP_CONNECTION_NAME) {
@@ -28,16 +28,22 @@ chrome.runtime.onConnect.addListener((port) => {
       popupPort = null;
     });
   } else if (port.name === CONTENT_CONNECTION_NAME) {
-    contentPort = port;
-    console.log(`${PAGE_NAME}: Connected to content script.`);
+    const tabId = port.sender.tab.id;
+    contentPorts[tabId] = port;
 
-    contentPort.onMessage.addListener((message) => {
+    console.log(
+      `${PAGE_NAME}: Connected to content script in ${port.sender.tab.name}`
+    );
+
+    port.onMessage.addListener((message) => {
       handleContentMessage(message);
     });
 
-    contentPort.onDisconnect.addListener(() => {
-      console.log(`${PAGE_NAME}: Disconnected from content script.`);
-      contentPort = null;
+    port.onDisconnect.addListener(() => {
+      console.log(
+        `${PAGE_NAME}: Disconnected from content script in tab ${tabId}.`
+      );
+      delete contentPorts[tabId];
     });
   }
 });
@@ -62,12 +68,16 @@ function sendCommandToContentScript(command) {
     chrome.tabs.query({ active: true, windowId: w.id }, function (tabs) {
       if (tabs.length === 0) {
         console.error(`${PAGE_NAME}: No active tab found.`);
-        return;
       }
-      if (contentPort) {
+
+      const contentPort = contentPorts[tabs?.[0].id];
+      if (!contentPort) {
+        console.error("ContentScript.js connection fell.");
+        return;
+      } else {
         contentPort.postMessage({ command });
         console.log(`${PAGE_NAME}: command '${command} send to contentScript`);
-      } else console.error("ContentScript.js connection fell.");
+      }
     });
   });
 }
@@ -125,7 +135,6 @@ function getPostProcessingSelection(callback) {
     if (result.postProcessing) {
       callback(result.postProcessing);
     } else {
-      console.error("No postProcessing found");
       callback(false);
     }
   });
